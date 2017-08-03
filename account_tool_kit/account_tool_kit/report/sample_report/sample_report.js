@@ -1,15 +1,15 @@
-// Copyright (c) 2016, Frappe and contributors
-// For license information, please see license.txt
+// Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+// License: GNU General Public License v3. See license.txt
 
 frappe.query_reports["Sample Report"] = {
 	"filters": [
-		
 		{
-			"fieldname":"company_type",
-			"label": __("Company Type"),
-			"fieldtype": "Select",
-			"options": ["Tea Company","Non Tea Company"],
-			"reqd": 1
+			"fieldname":"company",
+			"label": __("Company"),
+			"fieldtype": "Link",
+			"options": "Company",
+			"default": frappe.defaults.get_user_default("Company"),
+			"reqd": 0
 		},
 		{
 			"fieldname":"from_date",
@@ -32,15 +32,8 @@ frappe.query_reports["Sample Report"] = {
 			"label": __("Account"),
 			"fieldtype": "Link",
 			"options": "Account",
-			"get_query": function() {
-				var company = frappe.query_report_filters_by_name.company.get_value();
-				return {
-					"doctype": "Account",
-					"filters": {
-						"company": company,
-					}
-				}
-			}
+			"reqd": 0
+			
 		},
 		{
 			"fieldname":"voucher_no",

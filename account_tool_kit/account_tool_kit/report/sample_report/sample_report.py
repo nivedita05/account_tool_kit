@@ -1,5 +1,5 @@
-# Copyright (c) 2013, Frappe and contributors
-# For license information, please see license.txt
+# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+# License: GNU General Public License v3. See license.txt
 
 from __future__ import unicode_literals
 import frappe
@@ -25,9 +25,7 @@ def execute(filters=None):
 	return columns, res
 
 def validate_filters(filters, account_details):
-	#if not filters.get('company'):
-		#frappe.throw(_('{0} is mandatory').format(_('Company')))
-
+	
 	if filters.get("account") and not account_details.get(filters.account):
 		frappe.throw(_("Account {0} does not exists").format(filters.account))
 
@@ -62,7 +60,7 @@ def set_account_currency(filters):
 			account_currency = get_account_currency(filters.account)
 		elif filters.get("party"):
 			gle_currency = frappe.db.get_value("GL Entry", {"party_type": filters.party_type,
-				"party": filters.party}, "account_currency")
+				"party": filters.party, "company": filters.company}, "account_currency")
 			if gle_currency:
 				account_currency = gle_currency
 			else:
@@ -78,8 +76,7 @@ def set_account_currency(filters):
 
 def get_columns(filters):
 	columns = [
-		_("Posting Date") + ":Date:90", _("Company") + ":Link/Company:90",_("Company Type") + ":Data:90",
-		_("Account") + ":Link/Account:200",
+		_("Posting Date") + ":Date:90", _("Account") + ":Link/Account:200",
 		_("Debit") + ":Float:100", _("Credit") + ":Float:100"
 	]
 
@@ -118,12 +115,13 @@ def get_gl_entries(filters):
 
 	gl_entries = frappe.db.sql("""
 		select
-			posting_date, company,company_type, account, party_type, party,
+			posting_date, account, party_type, party,
 			sum(debit) as debit, sum(credit) as credit,
 			voucher_type, voucher_no, cost_center, project,
 			against_voucher_type, against_voucher,
 			remarks, against, is_opening {select_fields}
-		from `tabGL Entry` where company_type=%(company_type)s {conditions}
+		from `tabGL Entry`
+		where company=" " {conditions}
 		{group_by_condition}
 		order by posting_date, account"""\
 		.format(select_fields=select_fields, conditions=get_conditions(filters),
@@ -137,9 +135,6 @@ def get_conditions(filters):
 		lft, rgt = frappe.db.get_value("Account", filters["account"], ["lft", "rgt"])
 		conditions.append("""account in (select name from tabAccount
 			where lft>=%s and rgt<=%s and docstatus<2)""" % (lft, rgt))
-
-	if filters.get("company_type"):
-		conditions.append("company_type=%(company_type)s")
 
 	if filters.get("voucher_no"):
 		conditions.append("voucher_no=%(voucher_no)s")
@@ -293,7 +288,7 @@ def get_balance_row(label, balance, balance_in_account_currency=None):
 def get_result_as_list(data, filters):
 	result = []
 	for d in data:
-		row = [d.get("posting_date"), d.get("company"), d.get("company_type"), d.get("account"), d.get("debit"), d.get("credit")]
+		row = [d.get("posting_date"), d.get("account"), d.get("debit"), d.get("credit")]
 
 		if filters.get("show_in_account_currency"):
 			row += [d.get("debit_in_account_currency"), d.get("credit_in_account_currency")]
